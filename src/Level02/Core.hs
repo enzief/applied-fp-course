@@ -15,9 +15,14 @@ import           Data.Either              (either)
 
 import           Data.Text                (Text)
 import           Data.Text.Encoding       (decodeUtf8)
+import           Data.Text.Lazy           (fromStrict)
+import           Data.Text.Lazy.Encoding  (encodeUtf8)
 
-import           Level02.Types            (ContentType, Error, RqType,
-                                           mkCommentText, mkTopic,
+import           Level02.Types            (ContentType, ContentType(PlainText),
+                                           Error, Error(TopicEmpty, CommentEmpty, WrongPath),
+                                           RqType, RqType(AddRq, ViewRq, ListRq),
+                                           Topic,
+                                           mkCommentText, mkTopic, getTopic, getCommentText,
                                            renderContentType)
 
 -- |-------------------------------------------|
@@ -30,29 +35,25 @@ mkResponse
   -> ContentType
   -> LBS.ByteString
   -> Response
-mkResponse =
-  error "mkResponse not implemented"
+mkResponse s ct = responseLBS s [(hContentType, renderContentType ct)]
 
 resp200
   :: ContentType
   -> LBS.ByteString
   -> Response
-resp200 =
-  error "resp200 not implemented"
+resp200 = mkResponse status200
 
 resp404
   :: ContentType
   -> LBS.ByteString
   -> Response
-resp404 =
-  error "resp404 not implemented"
+resp404 = mkResponse status404
 
 resp400
   :: ContentType
   -> LBS.ByteString
   -> Response
-resp400 =
-  error "resp400 not implemented"
+resp400 = mkResponse status400
 
 -- |----------------------------------------------------------------------------------
 -- These next few functions will take raw request information and construct         --
@@ -68,23 +69,19 @@ mkAddRequest
   :: Text
   -> LBS.ByteString
   -> Either Error RqType
-mkAddRequest =
-  error "mkAddRequest not implemented"
+mkAddRequest t lbs = (<$> (mkCommentText . lazyByteStringToStrictText) lbs) =<< AddRq <$> mkTopic t
   where
     -- This is a helper function to assist us in going from a Lazy ByteString, to a Strict Text
-    lazyByteStringToStrictText =
-      decodeUtf8 . LBS.toStrict
+    lazyByteStringToStrictText = decodeUtf8 . LBS.toStrict
 
 mkViewRequest
   :: Text
   -> Either Error RqType
-mkViewRequest =
-  error "mkViewRequest not implemented"
+mkViewRequest = (ViewRq <$>) . mkTopic
 
 mkListRequest
   :: Either Error RqType
-mkListRequest =
-  error "mkListRequest not implemented"
+mkListRequest = Right ListRq
 
 -- |----------------------------------
 -- end of RqType creation functions --
@@ -93,8 +90,9 @@ mkListRequest =
 mkErrorResponse
   :: Error
   -> Response
-mkErrorResponse =
-  error "mkErrorResponse not implemented"
+mkErrorResponse TopicEmpty   = resp400 PlainText "empty.topic"
+mkErrorResponse CommentEmpty = resp400 PlainText "empty.comment"
+mkErrorResponse WrongPath    = resp404 PlainText "wrong.path"
 
 -- | Use our ``RqType`` helpers to write a function that will take the input
 -- ``Request`` from the Wai library and turn it into something our application
@@ -102,10 +100,12 @@ mkErrorResponse =
 mkRequest
   :: Request
   -> IO ( Either Error RqType )
-mkRequest =
-  -- Remembering your pattern-matching skills will let you implement the entire
-  -- specification in this function.
-  error "mkRequest not implemented"
+mkRequest rq =
+  case pathInfo rq of
+    [topic, "view"] -> pure . mkViewRequest $ topic
+    [topic, "add"]  -> mkAddRequest topic <$> strictRequestBody rq
+    ["list"]        -> pure mkListRequest
+    _               -> pure . Left $ WrongPath
 
 -- | If we find that we need more information to handle a request, or we have a
 -- new type of request that we'd like to handle then we update the ``RqType``
@@ -121,14 +121,21 @@ mkRequest =
 handleRequest
   :: RqType
   -> Either Error Response
-handleRequest =
-  error "handleRequest not implemented"
+handleRequest r =
+  case r of
+    ViewRq t  -> wrap200 $ topicString t <> " is viewed"
+    AddRq t c -> wrap200 $ topicString t <> " added " <> (strictTextToLazyByteString $ getCommentText c)
+    ListRq    -> wrap200 "List all topics"
+  where
+    wrap200 = Right . (resp200 PlainText)
+    strictTextToLazyByteString = encodeUtf8 . fromStrict
+    topicString = strictTextToLazyByteString . getTopic
 
 -- | Reimplement this function using the new functions and ``RqType`` constructors as a guide.
 app
   :: Application
-app =
-  error "app not reimplemented"
+app rq cb =
+   cb =<< (either mkErrorResponse id) . (handleRequest =<<) <$> mkRequest rq
 
 runApp :: IO ()
-runApp = run 3000 app
+runApp = run 9000 app
