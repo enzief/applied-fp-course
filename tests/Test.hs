@@ -52,8 +52,18 @@ main = defaultMain $ testGroup "Applied FP Course - Tests"
   [ testWai Core.app "List Topics" $
       get "fudge/view" >>= assertStatus' HTTP.status200
 
+  , testWai Core.app "View Topic" $
+      get "fudge/view" >>= assertStatus' HTTP.status200
+
+  , testWai Core.app "Add Comment" $ do
+      resp <- post "fudge/add" "dsfsd"
+      assertStatus' HTTP.status200 resp
+
+  , testWai Core.app "WRONG PATH" $ do
+      get "fudge/xxx" >>= assertStatus' HTTP.status404
+
   , testWai Core.app "Empty Input" $ do
       resp <- post "fudge/add" ""
       assertStatus' HTTP.status400 resp
-      assertBody "Empty Comment Text" resp
+      assertBody "empty.comment" resp
   ]
