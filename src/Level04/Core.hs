@@ -33,13 +33,14 @@ import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 import           Waargonaut.Encode                  (Encoder')
 import qualified Waargonaut.Encode                  as E
 
-import           Level04.Conf                       (Conf, dbFilePath, firstAppConfig)
+import           Level04.Conf                       (Conf, dbFilePath,
+                                                     firstAppConfig)
 import qualified Level04.DB                         as DB
 import           Level04.Types                      (ContentType (JSON, PlainText),
                                                      Error (EmptyCommentText, EmptyTopic, UnknownRoute),
                                                      RqType (AddRq, ListRq, ViewRq),
-                                                     mkCommentText, encodeComment,
-                                                     mkTopic, encodeTopic,
+                                                     encodeComment, encodeTopic,
+                                                     mkCommentText, mkTopic,
                                                      renderContentType)
 
 -- Our start-up is becoming more complicated and could fail in new and

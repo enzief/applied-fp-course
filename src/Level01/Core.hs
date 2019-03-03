@@ -4,9 +4,9 @@ module Level01.Core (runApp) where
 
 import           Network.Wai              (Application, Request, Response,
                                            ResponseReceived, responseLBS)
-import Network.Wai.Handler.Warp (run)
+import           Network.Wai.Handler.Warp (run)
 
-import Network.HTTP.Types (status200)
+import           Network.HTTP.Types       (status200)
 
 -- Our "application" will respond to ALL incoming requests with a 200
 -- status code response and the message "Hello, World!"

@@ -16,7 +16,8 @@ import           Database.SQLite.Simple.FromRow  (FromRow (fromRow), field)
 import           Database.SQLite.Simple.Internal (RowParser)
 import           Database.SQLite.Simple.ToRow    (ToRow (toRow))
 
-import           Level04.Types.Error             (Error (EmptyTopic), nonEmptyText)
+import           Level04.Types.Error             (Error (EmptyTopic),
+                                                  nonEmptyText)
 
 newtype Topic = Topic Text
   deriving Show

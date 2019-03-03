@@ -37,16 +37,17 @@ import qualified Waargonaut.Encode          as E
 import           Waargonaut.Types.Json
 import qualified Waargonaut.Types.Json      as J
 
-import           Level04.DB.Types           (DBComment, DBComment(DBComment))
+import           Level04.DB.Types           (DBComment (DBComment))
 
 -- | Notice how we've moved these types into their own modules. It's cheap and
 -- easy to add modules to carve out components in a Haskell application. So
 -- whenever you think that a module is too big, covers more than one piece of
 -- distinct functionality, or you want to carve out a particular piece of code,
 -- just spin up another module.
-import           Level04.Types.CommentText  (CommentText, getCommentText,
-                                             mkCommentText, encodeCommentText)
-import           Level04.Types.Topic        (Topic, getTopic, mkTopic, encodeTopic, topicParser)
+import           Level04.Types.CommentText  (CommentText, encodeCommentText,
+                                             getCommentText, mkCommentText)
+import           Level04.Types.Topic        (Topic, encodeTopic, getTopic,
+                                             mkTopic, topicParser)
 
 import           Level04.Types.Error        (Error (EmptyCommentText, EmptyTopic, UnknownRoute))
 

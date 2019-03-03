@@ -24,9 +24,9 @@ import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 import           Level04.DB.Types                   (DBComment)
 import           Level04.Types                      (Comment, CommentText,
                                                      Error, Topic,
-                                                     getTopic, mkTopic, topicParser,
-                                                     getCommentText,
-                                                     fromDBComment)
+                                                     fromDBComment,
+                                                     getCommentText, getTopic,
+                                                     mkTopic, topicParser)
 
 -- ------------------------------------------------------------------------|
 -- You'll need the documentation for sqlite-simple ready for this section! |

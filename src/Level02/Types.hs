@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-dodgy-exports #-}
 module Level02.Types
   ( Topic
@@ -14,7 +14,7 @@ module Level02.Types
   ) where
 
 import           Data.ByteString (ByteString)
-import           Data.Text as T  (Text, null)
+import           Data.Text       as T (Text, null)
 
 -- Working through the specification for our application, what are the
 -- types of requests we're going to handle?

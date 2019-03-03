@@ -18,11 +18,10 @@ import           Data.Text.Encoding       (decodeUtf8)
 import           Data.Text.Lazy           (fromStrict)
 import           Data.Text.Lazy.Encoding  (encodeUtf8)
 
-import           Level02.Types            (ContentType, ContentType(PlainText),
-                                           Error, Error(TopicEmpty, CommentEmpty, WrongPath),
-                                           RqType, RqType(AddRq, ViewRq, ListRq),
-                                           Topic,
-                                           mkCommentText, mkTopic, getTopic, getCommentText,
+import           Level02.Types            (ContentType (PlainText), Error (CommentEmpty, TopicEmpty, WrongPath),
+                                           RqType (AddRq, ListRq, ViewRq),
+                                           Topic, getCommentText, getTopic,
+                                           mkCommentText, mkTopic,
                                            renderContentType)
 
 -- |-------------------------------------------|
