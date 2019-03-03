@@ -3,15 +3,20 @@ module Level04.Types.Topic
   , mkTopic
   , getTopic
   , encodeTopic
+  , topicParser
   ) where
 
-import           Waargonaut.Encode          (Encoder)
-import qualified Waargonaut.Encode          as E
+import           Waargonaut.Encode               (Encoder)
+import qualified Waargonaut.Encode               as E
 
-import           Data.Functor.Contravariant (contramap)
-import           Data.Text                  (Text)
+import           Data.Functor.Contravariant      ((>$<))
+import           Data.Text                       (Text)
+import           Database.SQLite.Simple          (SQLData (SQLText))
+import           Database.SQLite.Simple.FromRow  (FromRow (fromRow), field)
+import           Database.SQLite.Simple.Internal (RowParser)
+import           Database.SQLite.Simple.ToRow    (ToRow (toRow))
 
-import           Level04.Types.Error        (Error (EmptyTopic), nonEmptyText)
+import           Level04.Types.Error             (Error (EmptyTopic), nonEmptyText)
 
 newtype Topic = Topic Text
   deriving Show
@@ -60,5 +65,13 @@ getTopic (Topic t) =
 -- for this level.
 --
 encodeTopic :: Applicative f => Encoder f Topic
-encodeTopic = -- Try using 'contramap' and 'E.text'
-  error "topic JSON encoder not implemented"
+encodeTopic = getTopic >$< E.text
+
+topicParser :: RowParser (Either Error Topic)
+topicParser = mkTopic <$> field
+
+instance FromRow Topic where
+  fromRow = Topic <$> field
+
+instance ToRow Topic where
+  toRow t = [SQLText . getTopic $ t]

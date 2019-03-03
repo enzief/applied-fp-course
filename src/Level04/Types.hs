@@ -10,8 +10,11 @@ module Level04.Types
   , Comment (..)
   , mkTopic
   , getTopic
+  , encodeTopic
+  , topicParser
   , mkCommentText
   , getCommentText
+  , encodeComment
   , renderContentType
   , fromDBComment
   ) where
@@ -31,8 +34,10 @@ import qualified Data.Time.Format           as TF
 
 import           Waargonaut.Encode          (Encoder)
 import qualified Waargonaut.Encode          as E
+import           Waargonaut.Types.Json
+import qualified Waargonaut.Types.Json      as J
 
-import           Level04.DB.Types           (DBComment)
+import           Level04.DB.Types           (DBComment, DBComment(DBComment))
 
 -- | Notice how we've moved these types into their own modules. It's cheap and
 -- easy to add modules to carve out components in a Haskell application. So
@@ -40,13 +45,21 @@ import           Level04.DB.Types           (DBComment)
 -- distinct functionality, or you want to carve out a particular piece of code,
 -- just spin up another module.
 import           Level04.Types.CommentText  (CommentText, getCommentText,
-                                             mkCommentText)
-import           Level04.Types.Topic        (Topic, getTopic, mkTopic)
+                                             mkCommentText, encodeCommentText)
+import           Level04.Types.Topic        (Topic, getTopic, mkTopic, encodeTopic, topicParser)
 
 import           Level04.Types.Error        (Error (EmptyCommentText, EmptyTopic, UnknownRoute))
 
 newtype CommentId = CommentId Int
   deriving (Eq, Show)
+
+getCommentId
+  :: CommentId
+  -> Int
+getCommentId (CommentId i) = i
+
+encodeCommentId :: Applicative f => Encoder f CommentId
+encodeCommentId = getCommentId >$< E.int
 
 -- | This is the `Comment` record that we will be sending to users, it's a
 -- straightforward record type, containing an `Int`, `Topic`, `CommentText`, and
@@ -66,9 +79,11 @@ data Comment = Comment
 -- 'https://hackage.haskell.org/package/waargonaut/docs/Waargonaut-Encode.html'
 --
 encodeComment :: Applicative f => Encoder f Comment
-encodeComment =
-  error "Comment JSON encoder not implemented"
-  -- Tip: Use the 'encodeISO8601DateTime' to handle the UTCTime for us.
+encodeComment = E.mapLikeObj $ \cmt ->
+  E.atKey' "commentId" encodeCommentId (commentId cmt) .
+  E.atKey' "commentTopic" encodeTopic (commentTopic cmt) .
+  E.atKey' "commentBody" encodeCommentText (commentBody cmt) .
+  E.atKey' "commentTime" encodeISO8601DateTime (commentTime cmt)
 
 -- | For safety we take our stored `DBComment` and try to construct a `Comment`
 -- that we would be okay with showing someone. However unlikely it may be, this
@@ -77,8 +92,11 @@ encodeComment =
 fromDBComment
   :: DBComment
   -> Either Error Comment
-fromDBComment =
-  error "fromDBComment not yet implemented"
+fromDBComment (DBComment cid topic body time) =
+  do
+    t <- mkTopic topic
+    b <- mkCommentText body
+    pure $ Comment (CommentId cid) t b time
 
 data RqType
   = AddRq Topic CommentText

@@ -18,6 +18,7 @@ import           Network.HTTP.Types                 (Status, hContentType,
                                                      status200, status400,
                                                      status404, status500)
 
+import           Data.Bifunctor                     (first, second)
 import qualified Data.ByteString.Lazy.Char8         as LBS
 
 import           Data.Either                        (Either (Left, Right),
@@ -32,12 +33,13 @@ import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 import           Waargonaut.Encode                  (Encoder')
 import qualified Waargonaut.Encode                  as E
 
-import           Level04.Conf                       (Conf, firstAppConfig)
+import           Level04.Conf                       (Conf, dbFilePath, firstAppConfig)
 import qualified Level04.DB                         as DB
 import           Level04.Types                      (ContentType (JSON, PlainText),
                                                      Error (EmptyCommentText, EmptyTopic, UnknownRoute),
                                                      RqType (AddRq, ListRq, ViewRq),
-                                                     mkCommentText, mkTopic,
+                                                     mkCommentText, encodeComment,
+                                                     mkTopic, encodeTopic,
                                                      renderContentType)
 
 -- Our start-up is becoming more complicated and could fail in new and
@@ -48,7 +50,10 @@ data StartUpError
   deriving Show
 
 runApp :: IO ()
-runApp = error "runApp needs re-implementing"
+runApp =
+  do
+    appE <- (app <$>) <$> prepareAppReqs
+    either print (run 9000) appE
 
 -- We need to complete the following steps to prepare our app requirements:
 --
@@ -60,7 +65,7 @@ runApp = error "runApp needs re-implementing"
 prepareAppReqs
   :: IO ( Either StartUpError DB.FirstAppDB )
 prepareAppReqs =
-  error "prepareAppReqs not implemented"
+  first DBInitErr <$> DB.initDB (dbFilePath firstAppConfig)
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse
@@ -137,12 +142,12 @@ handleRequest
   :: DB.FirstAppDB
   -> RqType
   -> IO (Either Error Response)
-handleRequest _db (AddRq _ _) =
-  (resp200 PlainText "Success" <$) <$> error "AddRq handler not implemented"
-handleRequest _db (ViewRq _)  =
-  error "ViewRq handler not implemented"
+handleRequest _db (AddRq t c) =
+  (resp200 PlainText "Success" <$) <$> DB.addCommentToTopic _db t c
+handleRequest _db (ViewRq t)  =
+  second (resp200Json $ E.list encodeComment) <$> DB.getComments _db t
 handleRequest _db ListRq      =
-  error "ListRq handler not implemented"
+  second (resp200Json $ E.list encodeTopic) <$> DB.getTopics _db
 
 mkRequest
   :: Request

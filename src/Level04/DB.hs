@@ -21,8 +21,12 @@ import qualified Database.SQLite.Simple             as Sql
 import qualified Database.SQLite.SimpleErrors       as Sql
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
+import           Level04.DB.Types                   (DBComment)
 import           Level04.Types                      (Comment, CommentText,
-                                                     Error, Topic)
+                                                     Error, Topic,
+                                                     getTopic, mkTopic, topicParser,
+                                                     getCommentText,
+                                                     fromDBComment)
 
 -- ------------------------------------------------------------------------|
 -- You'll need the documentation for sqlite-simple ready for this section! |
@@ -44,7 +48,7 @@ closeDB
   :: FirstAppDB
   -> IO ()
 closeDB =
-  error "closeDB not implemented"
+  Sql.close . dbConn
 
 -- Given a `FilePath` to our SQLite DB file, initialise the database and ensure
 -- our Table is there by running a query to create it, if it doesn't exist
@@ -53,7 +57,9 @@ initDB
   :: FilePath
   -> IO ( Either SQLiteResponse FirstAppDB )
 initDB fp =
-  error "initDB not implemented"
+  do
+    conn <- Sql.open fp
+    pure (FirstAppDB conn) <$ Sql.execute_ conn createTableQ
   where
   -- Query has an `IsString` instance so string literals like this can be
   -- converted into a `Query` type when the `OverloadedStrings` language
@@ -74,42 +80,48 @@ getComments
   :: FirstAppDB
   -> Topic
   -> IO (Either Error [Comment])
-getComments =
+getComments app tp =
   let
     sql = "SELECT id,topic,comment,time FROM comments WHERE topic = ?"
+    conn = dbConn app
   -- There are several possible implementations of this function. Particularly
   -- there may be a trade-off between deciding to throw an Error if a DBComment
   -- cannot be converted to a Comment, or simply ignoring any DBComment that is
   -- not valid.
   in
-    error "getComments not implemented"
+    traverse fromDBComment <$> Sql.query conn sql tp
 
 addCommentToTopic
   :: FirstAppDB
   -> Topic
   -> CommentText
   -> IO (Either Error ())
-addCommentToTopic =
+addCommentToTopic app tp txt =
   let
     sql = "INSERT INTO comments (topic,comment,time) VALUES (?,?,?)"
+    conn = dbConn app
   in
-    error "addCommentToTopic not implemented"
+    do
+      t <- getCurrentTime
+      pure <$> Sql.execute conn sql (getTopic tp, getCommentText txt, t)
 
 getTopics
   :: FirstAppDB
   -> IO (Either Error [Topic])
-getTopics =
+getTopics app =
   let
     sql = "SELECT DISTINCT topic FROM comments"
+    conn = dbConn app
   in
-    error "getTopics not implemented"
+    sequence <$> Sql.queryWith_ topicParser conn sql
 
 deleteTopic
   :: FirstAppDB
   -> Topic
   -> IO (Either Error ())
-deleteTopic =
+deleteTopic app tp =
   let
     sql = "DELETE FROM comments WHERE topic = ?"
+    conn = dbConn app
   in
-    error "deleteTopic not implemented"
+    pure <$> Sql.execute conn sql [getTopic tp]
