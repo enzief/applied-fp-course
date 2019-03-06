@@ -9,6 +9,8 @@ module Level05.Core
 import qualified Control.Exception                  as Ex
 import           Control.Monad.IO.Class             (liftIO)
 
+import           Data.Bifunctor                     (first)
+
 import           Network.Wai                        (Application, Request,
                                                      Response, pathInfo,
                                                      requestMethod, responseLBS,
@@ -32,7 +34,8 @@ import qualified Waargonaut.Encode                  as E
 
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
-import           Level05.AppM                       (AppM, liftEither, runAppM)
+import           Level05.AppM                       (AppM (AppM), liftEither,
+                                                     runAppM)
 import qualified Level05.Conf                       as Conf
 import qualified Level05.DB                         as DB
 import           Level05.Types                      (ContentType (..),
@@ -75,7 +78,7 @@ runApp = do
 prepareAppReqs
   :: IO ( Either StartUpError DB.FirstAppDB )
 prepareAppReqs =
-  error "copy your prepareAppReqs from the previous level."
+  first DBInitErr <$> DB.initDB (Conf.dbFilePath Conf.firstAppConfig)
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse
@@ -130,7 +133,11 @@ app
   :: DB.FirstAppDB
   -> Application
 app db rq cb =
-  error "app not reimplemented"
+  let rsp = mkRequest rq >>= handleRequest db
+  in handleErr <$> runAppM rsp >>= cb
+  where
+    handleErr :: Either Error Response -> Response
+    handleErr = either mkErrorResponse id
 
 handleRequest
   :: DB.FirstAppDB

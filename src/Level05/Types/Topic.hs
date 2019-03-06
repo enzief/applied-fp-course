@@ -3,21 +3,31 @@ module Level05.Types.Topic
   , mkTopic
   , getTopic
   , encodeTopic
+  , topicParser
   ) where
 
-import           Waargonaut.Encode          (Encoder)
-import qualified Waargonaut.Encode          as E
+import           Database.SQLite.Simple          (SQLData (SQLText))
+import           Database.SQLite.Simple.FromRow  (FromRow (fromRow), field)
+import           Database.SQLite.Simple.Internal (RowParser)
+import           Database.SQLite.Simple.ToRow    (ToRow (toRow))
 
-import           Level05.Types.Error        (Error (EmptyTopic), nonEmptyText)
+import           Waargonaut.Encode               (Encoder)
+import qualified Waargonaut.Encode               as E
 
-import           Data.Functor.Contravariant ((>$<))
-import           Data.Text                  (Text)
+import           Level05.Types.Error             (Error (EmptyTopic),
+                                                  nonEmptyText)
+
+import           Data.Functor.Contravariant      ((>$<))
+import           Data.Text                       (Text)
 
 newtype Topic = Topic Text
   deriving Show
 
 encodeTopic :: Applicative f => Encoder f Topic
 encodeTopic = getTopic >$< E.text
+
+topicParser :: RowParser (Either Error Topic)
+topicParser = mkTopic <$> field
 
 mkTopic
   :: Text
@@ -30,3 +40,9 @@ getTopic
   -> Text
 getTopic (Topic t) =
   t
+
+instance FromRow Topic where
+  fromRow = Topic <$> field
+
+instance ToRow Topic where
+  toRow t = [SQLText . getTopic $ t]

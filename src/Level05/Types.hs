@@ -11,6 +11,7 @@ module Level05.Types
   , CommentText
   , mkTopic
   , getTopic
+  , topicParser
   , mkCommentText
   , getCommentText
   , renderContentType
@@ -50,7 +51,8 @@ import           Level05.Types.CommentText          (CommentText,
                                                      mkCommentText)
 import           Level05.Types.Error                (Error (DBError, EmptyCommentText, EmptyTopic, UnknownRoute))
 import           Level05.Types.Topic                (Topic, encodeTopic,
-                                                     getTopic, mkTopic)
+                                                     getTopic, mkTopic,
+                                                     topicParser)
 
 newtype CommentId = CommentId Int
   deriving (Show)
