@@ -28,6 +28,7 @@ import           Data.Monoid                        ((<>))
 
 import           Data.Text                          (Text)
 import           Data.Text.Encoding                 (decodeUtf8)
+import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 import           Waargonaut.Encode                  (Encoder')
 import qualified Waargonaut.Encode                  as E
@@ -122,8 +123,8 @@ resp200Json
   -> a
   -> Response
 resp200Json e =
-  resp200 JSON .
-  E.simplePureEncodeNoSpaces e
+  resp200 JSON . encodeUtf8 .
+  E.simplePureEncodeTextNoSpaces e
 
 -- |
 
