@@ -2,11 +2,14 @@
 module Level06.Conf.File where
 
 import           Data.ByteString            (ByteString)
+import qualified Data.ByteString.Char8      as LBS
 
 import           Data.Text                  (Text, pack)
 
 import           Data.Bifunctor             (first)
 import           Data.Monoid                (Last (Last))
+
+import           Waargonaut.Attoparsec      (pureDecodeAttoparsecByteString)
 
 import           Control.Exception          (try)
 
@@ -16,9 +19,10 @@ import           Waargonaut                 (Json)
 import qualified Waargonaut.Decode          as D
 import           Waargonaut.Decode.Error    (DecodeError (ParseFailed))
 
-import           Level06.AppM               (AppM)
+import           Level06.AppM               (AppM, AppM (AppM), liftEither)
 import           Level06.Types              (ConfigError (BadConfFile),
-                                             PartialConf (PartialConf))
+                                             PartialConf (PartialConf),
+                                             partialConfDecoder)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
@@ -35,15 +39,17 @@ import           Level06.Types              (ConfigError (BadConfFile),
 readConfFile
   :: FilePath
   -> AppM ConfigError ByteString
-readConfFile =
-  error "readConfFile not implemented"
+readConfFile fp =
+  AppM $ first BadConfFile . pure <$> LBS.readFile fp
 
 -- | Construct the function that will take a ``FilePath``, read it in, decode it,
 -- and construct our ``PartialConf``.
 parseJSONConfigFile
   :: FilePath
   -> AppM ConfigError PartialConf
-parseJSONConfigFile =
-  error "parseJSONConfigFile not implemented"
+parseJSONConfigFile fp =
+  liftEither . first BadConfFile . doDecode =<< readConfFile fp
+  where
+    doDecode = pureDecodeAttoparsecByteString partialConfDecoder
 
 -- Go to 'src/Level06/Conf.hs' next.
