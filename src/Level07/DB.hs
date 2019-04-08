@@ -25,7 +25,7 @@ import qualified Database.SQLite.Simple             as Sql
 import qualified Database.SQLite.SimpleErrors       as Sql
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
-import           Level07.AppM                      (App, Env (envDB))
+import           Level07.AppM                      (App, AppM (..), Env (envDB))
 
 import           Level07.Types                     (Comment, CommentText,
                                                      DBFilePath (getDBFilePath),
@@ -34,6 +34,7 @@ import           Level07.Types                     (Comment, CommentText,
                                                      Topic, fromDBComment,
                                                      getCommentText, getTopic,
                                                      mkTopic)
+import           Level07.Types.Topic                 (topicParser)
 
 -- Quick helper to pull the connection and close it down.
 closeDB
@@ -63,37 +64,60 @@ initDB fp = Sql.runDBAction $ do
 getDBConn
   :: App Connection
 getDBConn =
-  error "getDBConn not implemented"
+  AppM $ pure . pure . dbConn . envDB
 
 runDB
   :: (a -> Either Error b)
   -> (Connection -> IO a)
   -> App b
-runDB =
-  error "runDB not re-implemented"
+runDB f g =
+  do
+    conn <- getDBConn
+    AppM . const $ f <$> g conn
 
 getComments
   :: Topic
   -> App [Comment]
-getComments =
-  error "Copy your completed 'getComments' and refactor to match the new type signature"
+getComments tp =
+  AppM $ \env ->
+    let
+      sql = "SELECT id,topic,comment,time FROM comments WHERE topic = ?"
+      conn = dbConn $ envDB env
+    in
+      traverse fromDBComment <$> Sql.query conn sql tp
 
 addCommentToTopic
   :: Topic
   -> CommentText
   -> App ()
-addCommentToTopic =
-  error "Copy your completed 'appCommentToTopic' and refactor to match the new type signature"
+addCommentToTopic tp txt =
+  AppM $ \env ->
+    let
+      sql = "INSERT INTO comments (topic,comment,time) VALUES (?,?,?)"
+      conn = dbConn $ envDB env
+    in do
+      t <- getCurrentTime
+      pure <$> Sql.execute conn sql (getTopic tp, getCommentText txt, t)
 
 getTopics
   :: App [Topic]
 getTopics =
-  error "Copy your completed 'getTopics' and refactor to match the new type signature"
+  AppM $ \env ->
+    let
+      sql = "SELECT DISTINCT topic FROM comments"
+      conn = dbConn $ envDB env
+    in
+      sequence <$> Sql.queryWith_ topicParser conn sql
 
 deleteTopic
   :: Topic
   -> App ()
-deleteTopic =
-  error "Copy your completed 'deleteTopic' and refactor to match the new type signature"
+deleteTopic tp =
+  AppM $ \env ->
+    let
+      sql = "DELETE FROM comments WHERE topic = ?"
+      conn = dbConn $ envDB env
+    in
+      pure <$> Sql.execute conn sql [getTopic tp]
 
 -- Go on to 'src/Level07/Core.hs' next.
