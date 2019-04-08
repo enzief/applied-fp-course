@@ -57,7 +57,20 @@ data StartUpError
   deriving Show
 
 runApplication :: IO ()
-runApplication = error "copy your previous 'runApp' implementation and refactor as needed"
+runApplication = do
+  -- Load our configuration
+  cfgE <- runAppM prepareAppReqs
+  -- Loading the configuration can fail, so we have to take that into account now.
+  case cfgE of
+    Left err  ->
+      -- We can't run our app at all! Display the message and exit the application.
+      print err
+    Right (cfg, db) ->
+      -- We have a valid config! We can now complete the various pieces needed to run our
+      -- application. This function 'finally' will execute the first 'IO a', and then, even in the
+      -- case of that value throwing an exception, execute the second 'IO b'. We do this to ensure
+      -- that our DB connection will always be closed when the application finishes, or crashes.
+      Ex.finally (run 9000 (app cfg db)) (DB.closeDB db)
 
 -- | We need to complete the following steps to prepare our app requirements:
 --
@@ -72,7 +85,10 @@ runApplication = error "copy your previous 'runApp' implementation and refactor 
 -- up!
 --
 prepareAppReqs :: AppM StartUpError (Conf, DB.FirstAppDB)
-prepareAppReqs = error "copy your prepareAppReqs from the previous level."
+prepareAppReqs =
+  (,)
+  <$> (first ConfErr $ Conf.parseOptions "application.conf")
+  <*> (first DBInitErr $ AppM $ DB.initDB "data.db")
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse

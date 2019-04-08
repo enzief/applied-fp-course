@@ -85,7 +85,7 @@ instance MonadError e (AppM e) where
   catchError ma r =
     AppM $ do
       ea <- runAppM ma
-      either (runAppM . r) (pure . pure) ea
+      runAppM $ either r pure ea
 
 -- The 'Bifunctor' instance for 'Either' has proved useful several times
 -- already. Now that our 'AppM' exposes both type variables that are used in our
